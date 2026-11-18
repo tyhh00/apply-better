@@ -16,7 +16,7 @@ A Chrome extension that remembers how you answer job, accelerator and grant appl
 
 ## What it does
 
-- **Remembers what you write.** Turn it on for a site and every answer you type into its forms is saved to your answer pool, with the question it belongs to. Passwords, codes and card numbers never are.
+- **Remembers what you write and pick.** Turn it on for a site and every answer you give in its forms is saved to your answer pool with the question it belongs to: typed answers, radio buttons, checkboxes and dropdowns (including the custom ones on Zoho, Google Forms and select2 forms). Passwords, codes and card numbers never are.
 - **Answers you've given before are one click.** Name, links, "why this company", "your proudest result". If you've answered it, it's waiting for you.
 - **Asks before it writes.** Press *Fill with my agent* and it reads your past answers, works out what it still doesn't know, and asks you a few short questions first, with suggested answers. What you tell it is saved, so you're never asked twice.
 - **Writes like you.** Drafts match your sentence length, your words and your tone, learned from what you've written (and only from what *you* wrote, never from drafts it gave you). Missing facts become a visible `[blank]` instead of something made up.
@@ -77,12 +77,12 @@ E2E_AGENT=claude npm run e2e   # the same, with your real Claude Code
 HEADED=1 npm run e2e           # watch it
 ```
 
-The end-to-end run turns a site on, types answers (and checks the password isn't kept), makes a project, reuses answers on a second form, has the agent ask and draft, puts the drafts in, checks the next application asks less, runs the voices, and turns the site off again. Screenshots land in `test/e2e/out/`.
+The end-to-end run turns a site on, types answers (and checks the password isn't kept), picks a hidden Zoho-style radio, checkboxes, a select2-style dropdown and a Google-Forms-style radio, makes a project, reuses answers on a second form, has the agent ask and draft, puts the drafts in, checks the next application asks less, runs the voices, and turns the site off again. Screenshots land in `test/e2e/out/`.
 
 ## Not yet
 
 - Windows (the bridge needs a registry entry there).
-- Dropdowns, radio buttons and file uploads. Text boxes and rich editors are covered.
+- File uploads, date pickers and dropdowns that load their options as you type.
 - A form embedded from another site (e.g. a job board inside a company page) needs that site turned on too.
 - The Chrome Web Store. For now you load it unpacked. If you publish your own build, pass its ID with `npm run connect -- --extension-id <id>`.
 

@@ -1,7 +1,7 @@
 // The prompts and JSON shapes apply-better sends to your local Claude Code or Codex.
 // Schemas are written in the strict form (every property required, no extras)
 // so the same schema works for both `claude --json-schema` and `codex --output-schema`.
-import type { Answer, PageField, Project, Store, Voice } from "./types";
+import { isChoice, type Answer, type PageField, type Project, type Store, type Voice } from "./types";
 import { rank, styleSamples } from "./relevance";
 
 export const SYSTEM = `You are apply better, a writing partner that helps one person answer application forms (jobs, accelerators, grants, programs) in their own voice.
@@ -20,6 +20,17 @@ export interface FillContext {
 
 const MAX_POOL_CHARS = 40_000;
 const MAX_ANSWER_CHARS = 2_500;
+
+const MAX_OPTIONS_SHOWN = 40;
+
+function describeField(f: PageField): string {
+  if (isChoice(f.kind) && f.options) {
+    const shown = f.options.slice(0, MAX_OPTIONS_SHOWN).join(" | ");
+    const more = f.options.length > MAX_OPTIONS_SHOWN ? ` | …and ${f.options.length - MAX_OPTIONS_SHOWN} more` : "";
+    return `${f.kind === "multi" ? "pick any of" : "pick one of"}: ${shown}${more}`;
+  }
+  return `${f.kind === "text" ? "short answer" : "long answer"}${f.maxLength ? `, max ${f.maxLength} characters` : ""}`;
+}
 
 export function fieldLabel(i: number): string {
   return `F${i + 1}`;
@@ -71,9 +82,8 @@ export function buildContext(c: FillContext, extra: { told?: { question: string;
 
   const fields = c.fields
     .map((f, i) => {
-      const limit = f.maxLength ? `, max ${f.maxLength} characters` : "";
-      const current = f.value.trim() ? `\n  Already in the box: ${clip(f.value, 600)}` : "";
-      return `${fieldLabel(i)} [${f.kind === "text" ? "short answer" : "long answer"}${limit}]\n<field>${f.question}</field>${current}`;
+      const current = f.value.trim() ? `\n  Already ${isChoice(f.kind) ? "picked" : "in the box"}: ${clip(f.value, 600)}` : "";
+      return `${fieldLabel(i)} [${describeField(f)}]\n<field>${f.question}</field>${current}`;
     })
     .join("\n\n");
 
@@ -132,6 +142,7 @@ Before writing anything, decide what you still need from the person to write str
 - Don't ask anything their past answers, the notes, or "About the person" already answer. Every question you skip is time saved; that is the point.
 - Don't ask which story or example to use when one is clearly the strongest fit: use it, and they can change it when they review the draft. Ask only when two options are genuinely close.
 - Short factual fields (name, email, links) need no question if you already know the answer.
+- Pick fields (radio buttons, dropdowns, checkboxes): ask only if you can't tell which option is true for them. Never guess personal facts like ethnicity, gender, nationality, disability, veteran or visa status; if they haven't told you, ask, and offer the form's options as suggestions.
 - Merge questions that serve several fields. At most 6 questions. Zero is a great answer when you already have enough.
 - Each question is short and plain, answerable in a sentence. "why" says in a few words what it unlocks.
 - "fields" lists the field labels it serves (like "F2").
@@ -169,6 +180,7 @@ Write an answer for every field in the form, as the person, in the first person.
 - Stay inside any character limit, with room to spare. If the question names a word limit, keep to it.
 - Never invent facts. If a fact you need is missing, write a short [bracketed placeholder] for it.
 - Short factual fields (name, email, links): use exactly what you know, or leave the answer empty.
+- Pick fields: answer with the option copied exactly as the form writes it. "pick any of": list every option that applies, separated by "; ". If you don't know which is true for them, leave it empty; never guess a personal fact.
 - "field" is the label (like "F1"). "note" is one short line for the person about anything to check, or empty.`;
 }
 

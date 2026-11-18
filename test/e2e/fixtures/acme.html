@@ -4,6 +4,12 @@
   <div class="f"><label for="n">Full name</label><input id="n" name="full_name"></div>
   <div class="f"><label for="e">Email</label><input id="e" type="email" name="email"></div>
   <div class="f"><label for="l">LinkedIn URL</label><input id="l" name="linkedin_url"></div>
+  <li class="f" style="list-style:none"><label id="eth-l" class="labelName">Ethnicity</label>
+    <div class="zradio" role="radiogroup" aria-labelledby="eth-l">
+      <span><input type="radio" id="eth_1" name="eth" value="1"><label for="eth_1">Chinese</label></span><span><input type="radio" id="eth_2" name="eth" value="2"><label for="eth_2">Malay</label></span><span><input type="radio" id="eth_3" name="eth" value="3"><label for="eth_3">Indian</label></span><span><input type="radio" id="eth_4" name="eth" value="4"><label for="eth_4">Prefer not to say</label></span>
+    </div></li>
+  <fieldset class="f" style="border:0;padding:0"><legend style="font-weight:600">Are you open to relocating to Singapore?</legend>
+    <label><input type="radio" name="reloc" id="reloc-yes" value="y"> Yes</label> <label><input type="radio" name="reloc" id="reloc-no" value="n"> No</label></fieldset>
   <div class="f"><label for="w">Why do you want to join Acme?</label><textarea id="w" maxlength="800"></textarea></div>
   <div class="f"><label for="i">Describe the most impactful thing you've built. Include numbers if you can.</label><textarea id="i" maxlength="1200"></textarea></div>
   <div class="f"><label for="d">What would you want to work on in your first 90 days?</label><textarea id="d" maxlength="800"></textarea></div>

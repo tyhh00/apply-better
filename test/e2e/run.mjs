@@ -87,8 +87,8 @@ try {
   await panel.getByRole("button", { name: "Turn on for 127.0.0.1" }).waitFor();
   await shot("01-turn-on");
   await panel.getByRole("button", { name: "Turn on for 127.0.0.1" }).click();
-  await panel.getByText("6 questions on this page").waitFor({ timeout: 10_000 });
-  expect(true, "found 6 questions (the password box is left out)");
+  await panel.getByText("10 questions on this page").waitFor({ timeout: 10_000 });
+  expect(true, "found 10 questions: 6 to type, 4 to pick (the password box is left out)");
   await shot("02-questions-found");
 
   // 2. Write answers by hand; they are remembered
@@ -107,10 +107,22 @@ try {
   );
   await form.locator("[contenteditable]").click();
   await form.keyboard.type("I'm based in Singapore and can overlap with US mornings.");
+  step("pick answers: Zoho-style radio, checkboxes, a silent select2-style dropdown, Google-Forms-style radio");
+  await form.click("label[for=Radio1_1]");
+  await form.getByLabel("Engineering").check();
+  await form.getByLabel("Product").check();
+  await form.click("#hear-combo");
+  await form.click("#hear-menu >> text=Hacker News");
+  await form.click("#reloc [data-value=Yes]");
   await form.locator("h1").click();
   await form.waitForTimeout(1800);
   let answers = await answersOf();
-  expect(answers.length === 6, `6 answers remembered (got ${answers.length})`);
+  expect(answers.length === 10, `10 answers remembered (got ${answers.length})`);
+  const said = (q) => answers.find((a) => a.question === q)?.answer;
+  expect(said("Ethnicity") === "Chinese", `Ethnicity → ${said("Ethnicity")} (hidden Zoho-style radio)`);
+  expect(said("Which roles interest you?") === "Engineering; Product", `Roles → ${said("Which roles interest you?")}`);
+  expect(said("How did you hear about us?") === "Hacker News", `Heard via → ${said("How did you hear about us?")} (dropdown changed with no event)`);
+  expect(said("Are you open to relocation?") === "Yes", `Relocation → ${said("Are you open to relocation?")} (radio with no input)`);
   expect(!JSON.stringify(answers).includes("hunter2"), "the password was not saved");
   expect(answers.every((a) => a.source === "you"), "all marked as your own writing");
   expect(answers.some((a) => a.question === "Tell us about a project you're proud of What was your part, and what changed because of it?"), "label-less question read from its block");
@@ -139,17 +151,18 @@ try {
   step("open the Acme form");
   await form.goto(`${base}/acme.html`);
   await panel.getByRole("tab", { name: "Fill" }).click();
-  await panel.getByText("6 questions on this page").waitFor({ timeout: 10_000 });
-  const before = await panel.getByText("Answered before").count();
-  expect(before >= 3, `${before} questions already answered before (name, email, LinkedIn)`);
+  await panel.getByText("8 questions on this page").waitFor({ timeout: 10_000 });
+  const before = await panel.getByText(/^Answered before/).count();
+  expect(before >= 4, `${before} questions already answered before (name, email, LinkedIn, ethnicity)`);
   await shot("06-answered-before");
-  for (let i = 0; i < 3; i++) await panel.getByRole("button", { name: "Use it" }).first().click();
-  await form.waitForTimeout(300);
+  for (let i = 0; i < 4; i++) await panel.getByRole("button", { name: "Use it" }).first().click();
+  await form.waitForTimeout(400);
   expect((await form.inputValue("#l")) === "https://linkedin.com/in/samrivera", "one click put the LinkedIn URL in, no agent needed");
   expect((await form.inputValue("#n")) === "Sam Rivera", "and the name");
+  expect(await form.isChecked("#eth_1"), "and picked Chinese on a different form's Ethnicity radios");
 
   step("fill the rest with the agent");
-  await panel.getByRole("button", { name: /Fill 3 with my agent/ }).click();
+  await panel.getByRole("button", { name: /Fill 4 with my agent/ }).click();
   await panel.getByText("Reading how you write…").waitFor();
   await shot("07-reading");
   const planStart = Date.now();
@@ -179,6 +192,9 @@ try {
   const filled = [await form.inputValue("#w"), await form.inputValue("#i"), await form.inputValue("#d")];
   expect(filled.every((v) => v.trim().length > 10), "all three long answers are in the Acme form");
   expect(filled.every((v, i) => v.length <= [800, 1200, 800][i]), "each stays inside the box's character limit");
+  const reloc = (await form.isChecked("#reloc-yes")) ? "Yes" : (await form.isChecked("#reloc-no")) ? "No" : "(left empty)";
+  if (AGENT === "fake") expect(reloc === "Yes", "the agent's pick for relocation is ticked in the form");
+  else step(`  relocation: the agent picked ${reloc}`);
   await form.bringToFront();
   await form.screenshot({ path: path.join(out, "10-acme-form-filled.png"), fullPage: true });
   await panel.bringToFront();

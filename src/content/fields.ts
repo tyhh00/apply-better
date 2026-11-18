@@ -5,11 +5,15 @@ export type FieldEl = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
 
 const TEXT_INPUT_TYPES = new Set(["", "text", "email", "url", "tel", "number", "search"]);
 const SENSITIVE = /pass(word|code)?|\bpwd\b|otp|one.?time|2fa|verification.?code|cvv|cvc|security.?code|card.?(number|no)|credit.?card|\bssn\b|social.?security|routing|iban|account.?number|\bpin\b/i;
-const CONTROL_SELECTOR = "input, textarea, select, button, [contenteditable=''], [contenteditable='true'], [role='textbox']";
+// Text inside these is an answer or an option, never part of a question.
+export const CONTROL_SELECTOR =
+  "input, textarea, select, button, [contenteditable=''], [contenteditable='true'], [role='textbox'], [role='radio'], [role='checkbox'], [role='option'], [role='listbox'], [role='combobox']";
 
 export function isTextField(el: Element): el is FieldEl {
   if (el instanceof HTMLTextAreaElement) return true;
-  if (el instanceof HTMLInputElement) return TEXT_INPUT_TYPES.has((el.getAttribute("type") ?? "").toLowerCase());
+  if (el instanceof HTMLInputElement)
+    // A dropdown widget's own search box (select2 and friends) is not a question.
+    return TEXT_INPUT_TYPES.has((el.getAttribute("type") ?? "").toLowerCase()) && !el.closest(".select2-container, [role='listbox']");
   if (el instanceof HTMLElement) {
     const ce = el.getAttribute("contenteditable");
     if (ce === "" || ce === "true" || ce === "plaintext-only") return !el.parentElement?.closest("[contenteditable='true'], [contenteditable='']");
@@ -40,7 +44,7 @@ export function fieldValue(el: FieldEl): string {
   return (el.innerText ?? el.textContent ?? "").replace(/ /g, " ");
 }
 
-function clean(s: string): string {
+export function clean(s: string): string {
   return s
     .replace(/\s+/g, " ")
     .replace(/\s*\*\s*$/, "")
@@ -50,14 +54,15 @@ function clean(s: string): string {
 }
 
 /** Visible text under `root`, skipping form controls and hidden parts. */
-export function textOutsideControls(root: Element): string {
+export function textOutsideControls(root: Element, skip?: Set<Element>): string {
+  if (skip?.has(root)) return "";
   const out: string[] = [];
   const walk = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) {
       out.push(node.textContent ?? "");
       return;
     }
-    if (!(node instanceof Element)) return;
+    if (!(node instanceof Element) || skip?.has(node)) return;
     if (node.matches(CONTROL_SELECTOR) || node.matches("script, style, noscript, svg, template, [hidden], [aria-hidden='true']"))
       return;
     if (node instanceof HTMLElement && node.style?.display === "none") return;
@@ -67,7 +72,7 @@ export function textOutsideControls(root: Element): string {
   return clean(out.join(" "));
 }
 
-function byIds(ids: string, doc: Document): string {
+export function byIds(ids: string, doc: Document): string {
   return clean(
     ids
       .split(/\s+/)

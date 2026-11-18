@@ -6,7 +6,7 @@ import { insertIntoPage, scanPage, siteOf } from "../page";
 import { AgentError, Counter } from "../ui";
 import { AuditView } from "./Fill";
 import { allVoices, findVoice } from "../../shared/voices";
-import type { AuditResult, PageField, RefineResult, Voice } from "../../shared/types";
+import { isChoice, type AuditResult, type PageField, type RefineResult, type Voice } from "../../shared/types";
 
 export function VoicesTab({ store, tab, goto }: PanelProps) {
   const voices = allVoices(store.voices);
@@ -41,7 +41,7 @@ export function VoicesTab({ store, tab, goto }: PanelProps) {
   const pull = async () => {
     if (!tab) return;
     try {
-      setPageFields((await scanPage(tab.id)).filter((f) => f.value.trim().length > 0));
+      setPageFields((await scanPage(tab.id)).filter((f) => !isChoice(f.kind) && f.value.trim().length > 0));
     } catch (e) {
       setError((e as Error).message);
     }

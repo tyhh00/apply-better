@@ -7,8 +7,9 @@ import { AgentError, Counter, Empty, Thinking } from "../ui";
 import { send } from "../../shared/messages";
 import { fieldLabel, type FillContext } from "../../shared/prompts";
 import { pastAnswerFor } from "../../shared/relevance";
+import { joinPicks, pickOptions } from "../../shared/options";
 import { allVoices, findVoice } from "../../shared/voices";
-import type { Answer, AuditResult, GapQuestion, PageField, RefineResult, Store } from "../../shared/types";
+import { isChoice, type Answer, type AuditResult, type GapQuestion, type PageField, type RefineResult, type Store } from "../../shared/types";
 
 type Step = "pick" | "planning" | "asking" | "drafting" | "review";
 
@@ -126,7 +127,17 @@ export function FillTab({ store, tab, goto }: PanelProps) {
       const drafts: Record<string, Draft> = {};
       chosen.forEach((f, i) => {
         const d = out.find((a) => a.field.trim().toUpperCase() === fieldLabel(i));
-        drafts[f.ref] = { answer: d?.answer ?? "", note: d?.note ?? "", inserted: null };
+        let answer = d?.answer ?? "";
+        let note = d?.note ?? "";
+        if (isChoice(f.kind) && f.options && answer.trim()) {
+          const picks = pickOptions(answer, f.options, f.kind === "multi");
+          if (picks) answer = joinPicks(picks);
+          else {
+            note = `It suggested "${answer}", which isn't one of the options. Pick one yourself.${note ? ` ${note}` : ""}`;
+            answer = "";
+          }
+        }
+        drafts[f.ref] = { answer, note, inserted: null };
       });
       patch({ step: "review", drafts });
     } catch (e) {
@@ -294,7 +305,9 @@ export function FillTab({ store, tab, goto }: PanelProps) {
           </div>
           <div className="list">
             {s.fields.map((f) => {
-              const past = !f.value.trim() ? pastAnswerFor(f.question, answers) : null;
+              const found = !f.value.trim() ? pastAnswerFor(f.question, answers) : null;
+              const picks = found && isChoice(f.kind) && f.options ? pickOptions(found.answer, f.options, f.kind === "multi") : null;
+              const past = found && (!isChoice(f.kind) || picks) ? (picks ? { ...found, answer: joinPicks(picks) } : found) : null;
               return (
                 <div className="qrow" key={f.ref}>
                   <input
@@ -306,10 +319,12 @@ export function FillTab({ store, tab, goto }: PanelProps) {
                   <div className="qtext stack tight">
                     <button onClick={() => focusInPage(tab.id, f)}>{f.question}</button>
                     {f.value.trim() ? (
-                      <span className="small faint">Already filled: {f.value.slice(0, 80)}</span>
+                      <span className="small faint">
+                        {isChoice(f.kind) ? "Picked" : "Already filled"}: {f.value.slice(0, 80)}
+                      </span>
                     ) : past ? (
                       <span className="row small">
-                        <span className="tag">Answered before</span>
+                        <span className="tag">Answered before{isChoice(f.kind) ? `: ${past.answer.slice(0, 40)}` : ""}</span>
                         <button className="link small" onClick={() => usePast(f, past)}>
                           Use it
                         </button>
@@ -384,7 +399,8 @@ function DraftCard({
   const voice = findVoice(voiceId, store.voices);
   const inForm = draft.inserted !== null && draft.inserted === draft.answer;
   // The agent leaves [brackets] where it was missing a fact; don't let one slip into a real form unseen.
-  const blanks = draft.answer.match(/\[[^\]\n]{2,80}\]/g) ?? [];
+  const choice = isChoice(field.kind) && !!field.options;
+  const blanks = choice ? [] : (draft.answer.match(/\[[^\]\n]{2,80}\]/g) ?? []);
 
   const go = async (kind: "refine" | "audit") => {
     setBusy(kind);
@@ -405,9 +421,13 @@ function DraftCard({
       <button className="link" style={{ textDecoration: "none", color: "var(--ink)", fontWeight: 600, textAlign: "left" }} onClick={onFocus}>
         {field.question}
       </button>
-      <textarea rows={field.kind === "text" ? 1 : 6} value={draft.answer} onChange={(e) => onChange({ ...draft, answer: e.target.value })} placeholder="(left empty)" />
+      {choice ? (
+        <ChoiceEditor field={field} value={draft.answer} onChange={(answer) => onChange({ ...draft, answer })} />
+      ) : (
+        <textarea rows={field.kind === "text" ? 1 : 6} value={draft.answer} onChange={(e) => onChange({ ...draft, answer: e.target.value })} placeholder="(left empty)" />
+      )}
       <div className="row">
-        <Counter text={draft.answer} max={field.maxLength} />
+        {!choice && <Counter text={draft.answer} max={field.maxLength} />}
         <span className="spacer" />
         {inForm ? <span className="tag solid">In the form</span> : null}
       </div>
@@ -421,7 +441,7 @@ function DraftCard({
         <button className="btn small primary" disabled={!draft.answer.trim() || inForm} onClick={() => onInsert(draft.answer)}>
           {draft.inserted !== null && !inForm ? "Put in again" : "Put in form"}
         </button>
-        <div className="row" style={{ gap: 6, marginLeft: "auto" }}>
+        {!choice && <div className="row" style={{ gap: 6, marginLeft: "auto" }}>
           <select aria-label="Voice for this answer" value={voiceId} onChange={(e) => setVoiceId(e.target.value)} style={{ width: 112, height: 26, fontSize: 12, padding: "0 6px" }}>
             {allVoices(store.voices).map((v) => (
               <option key={v.id} value={v.id}>
@@ -435,7 +455,7 @@ function DraftCard({
           <button className="btn small" disabled={!!busy || !draft.answer.trim()} onClick={() => go("audit")}>
             {busy === "audit" ? "Checking…" : "Check"}
           </button>
-        </div>
+        </div>}
       </div>
       {refined && (
         <div className="card soft">
@@ -484,6 +504,40 @@ export function AuditView({ result }: { result: AuditResult }) {
           <span className="small muted">{i.problem}</span>
           <span className="small">→ {i.fix}</span>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function ChoiceEditor({ field, value, onChange }: { field: PageField; value: string; onChange: (v: string) => void }) {
+  const options = field.options ?? [];
+  if (field.kind !== "multi")
+    return (
+      <select aria-label={`Pick for ${field.question}`} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">(leave empty)</option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    );
+  const picked = new Set(value.split("; ").filter(Boolean));
+  return (
+    <div className="stack tight">
+      {options.map((o) => (
+        <label key={o} className="row small" style={{ cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={picked.has(o)}
+            style={{ accentColor: "var(--ink)" }}
+            onChange={(e) => {
+              const next = options.filter((x) => (x === o ? e.target.checked : picked.has(x)));
+              onChange(joinPicks(next));
+            }}
+          />
+          {o}
+        </label>
       ))}
     </div>
   );

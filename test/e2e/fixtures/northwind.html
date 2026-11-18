@@ -4,9 +4,28 @@
   <div class="f"><label for="name">Full name *</label><input id="name" name="name"></div>
   <div class="f"><label for="email">Email *</label><input id="email" name="email" type="email"></div>
   <div class="f"><label for="li">LinkedIn URL</label><input id="li" name="linkedin"></div>
+  <li class="f" id="Radio1-li" style="list-style:none"><label id="Radio1-arialabel" class="labelName">Ethnicity <em>*</em></label>
+    <div class="zradio" role="radiogroup" aria-labelledby="Radio1-arialabel">
+      <span><input type="radio" id="Radio1_1" name="Radio1" value="Chinese"><label for="Radio1_1">Chinese</label></span><span><input type="radio" id="Radio1_2" name="Radio1" value="Malay"><label for="Radio1_2">Malay</label></span><span><input type="radio" id="Radio1_3" name="Radio1" value="Indian"><label for="Radio1_3">Indian</label></span><span><input type="radio" id="Radio1_4" name="Radio1" value="Other"><label for="Radio1_4">Other</label></span>
+    </div></li>
+  <div class="f checks"><label id="roles-q">Which roles interest you?</label><div role="group" aria-labelledby="roles-q">
+    <label><input type="checkbox" name="roles" value="eng"> Engineering</label><label><input type="checkbox" name="roles" value="des"> Design</label><label><input type="checkbox" name="roles" value="pm"> Product</label></div></div>
+  <div class="f"><label class="labelName">How did you hear about us?</label>
+    <div class="sel"><select id="hear" style="display:none"><option value="">-Select-</option><option>LinkedIn</option><option>A friend</option><option>Hacker News</option></select>
+    <span role="combobox" class="combo" id="hear-combo" tabindex="0">-Select-</span><div class="menu" id="hear-menu" hidden><div>LinkedIn</div><div>A friend</div><div>Hacker News</div></div></div></div>
+  <div class="f" role="listitem"><div role="heading">Are you open to relocation?</div>
+    <div role="radiogroup" id="reloc"><div role="radio" aria-checked="false" data-value="Yes" aria-label="Yes">Yes</div><div role="radio" aria-checked="false" data-value="No" aria-label="No">No</div></div></div>
   <div class="f"><label for="pw">Create a password</label><input id="pw" name="password" type="password"></div>
   <div class="f"><label for="why">Why do you want to work at Northwind?</label><textarea id="why" name="why" maxlength="1000"></textarea></div>
   <div class="f" role="listitem"><div role="heading">Tell us about a project you're proud of <div class="desc">What was your part, and what changed because of it?</div></div><div><textarea></textarea></div></div>
   <div class="f"><div id="else-l">Anything else we should know?</div><div contenteditable="true" role="textbox" aria-labelledby="else-l"></div></div>
   <button>Submit application</button><p id="done" hidden>Thanks, we got it.</p>
-</form></body></html>
+</form>
+<script>
+  // select2-style: the hidden <select> changes with no event at all
+  const combo = document.getElementById("hear-combo"), menu = document.getElementById("hear-menu"), sel = document.getElementById("hear");
+  combo.onclick = () => (menu.hidden = !menu.hidden);
+  menu.onclick = (e) => { sel.value = e.target.textContent; combo.textContent = e.target.textContent; menu.hidden = true; };
+  // Google-Forms-style radios
+  document.querySelectorAll("#reloc [role=radio]").forEach((r) => (r.onclick = () => document.querySelectorAll("#reloc [role=radio]").forEach((x) => x.setAttribute("aria-checked", String(x === r)))));
+</script></body></html>

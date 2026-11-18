@@ -67,6 +67,11 @@ export interface Store {
   settings: Settings;
 }
 
+/** Typed boxes, or one pick (radio / dropdown), or any number of picks (checkboxes). */
+export type FieldKind = "text" | "textarea" | "rich" | "single" | "select" | "multi";
+
+export const isChoice = (k: FieldKind) => k === "single" || k === "select" || k === "multi";
+
 /** A form field found on the page. */
 export interface PageField {
   /** frameId:fieldId, unique within the tab. */
@@ -74,10 +79,12 @@ export interface PageField {
   frameId: number;
   fieldId: string;
   question: string;
-  kind: "text" | "textarea" | "rich";
+  kind: FieldKind;
   inputType: string;
   maxLength: number | null;
   value: string;
+  /** The choices, for radio buttons, checkboxes and dropdowns. */
+  options: string[] | null;
 }
 
 export interface CapturePayload {

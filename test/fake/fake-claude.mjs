@@ -20,9 +20,16 @@ process.stdin.on("end", () => {
       ? { questions: [] }
       : { questions: [{ question: "What's the proudest result you've shipped, with a number?", why: "Makes the impact answer concrete", fields: ["F2"], suggestions: ["Cut checkout time 40%"] }] };
   } else if (keys.includes("answers")) {
-    const labels = [...input.matchAll(/^(F\d+) \[/gm)].map((m) => m[1]);
+    const fields = [...input.matchAll(/^(F\d+) \[(.*)\]$/gm)].map((m) => ({ f: m[1], shape: m[2] }));
     const told = input.match(/## What they just told you for this form\nQ: .*\nA: (.*)/);
-    out = { answers: labels.map((f) => ({ field: f, answer: `Draft for ${f}${told ? `, built on: ${told[1]}` : ""}.`, note: f === "F1" ? "Check the name" : "" })) };
+    out = {
+      answers: fields.map(({ f, shape }) => {
+        // Pick fields: choose the first option, written as the form writes it.
+        const pick = shape.match(/^pick (?:one|any) of: (.*)$/);
+        if (pick) return { field: f, answer: pick[1].split(" | ")[0], note: "" };
+        return { field: f, answer: `Draft for ${f}${told ? `, built on: ${told[1]}` : ""}.`, note: f === "F1" ? "Check the name" : "" };
+      }),
+    };
   } else if (keys.includes("verdict")) {
     out = { verdict: "Clear, but it hides who made the call.", score: 6, issues: [{ quote: "we", problem: "Hides ownership", fix: "I" }] };
   } else if (keys.includes("text")) {

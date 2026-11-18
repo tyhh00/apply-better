@@ -8,7 +8,7 @@ const a = (id: string, question: string, answer: string, extra: Partial<Answer> 
   id, question, answer, projectId: null, source: "you", url: "", site: "jobs.example.com", pageTitle: "", captureKey: null, createdAt: 1, updatedAt: 1, ...extra,
 });
 const field = (i: number, question: string, extra: Partial<PageField> = {}): PageField => ({
-  ref: `0:f${i}`, frameId: 0, fieldId: `f${i}`, question, kind: "textarea", inputType: "textarea", maxLength: null, value: "", ...extra,
+  ref: `0:f${i}`, frameId: 0, fieldId: `f${i}`, question, kind: "textarea", inputType: "textarea", maxLength: null, value: "", options: null, ...extra,
 });
 
 const store: Store = {
