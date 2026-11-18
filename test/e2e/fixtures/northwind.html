@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Northwind · Product Engineer application</title><link rel="stylesheet" href="_style.css"></head><body>
+<h1>Product Engineer</h1><p class="sub">Northwind · Remote</p>
+<form onsubmit="event.preventDefault(); document.getElementById('done').hidden=false">
+  <div class="f"><label for="name">Full name *</label><input id="name" name="name"></div>
+  <div class="f"><label for="email">Email *</label><input id="email" name="email" type="email"></div>
+  <div class="f"><label for="li">LinkedIn URL</label><input id="li" name="linkedin"></div>
+  <div class="f"><label for="pw">Create a password</label><input id="pw" name="password" type="password"></div>
+  <div class="f"><label for="why">Why do you want to work at Northwind?</label><textarea id="why" name="why" maxlength="1000"></textarea></div>
+  <div class="f" role="listitem"><div role="heading">Tell us about a project you're proud of <div class="desc">What was your part, and what changed because of it?</div></div><div><textarea></textarea></div></div>
+  <div class="f"><div id="else-l">Anything else we should know?</div><div contenteditable="true" role="textbox" aria-labelledby="else-l"></div></div>
+  <button>Submit application</button><p id="done" hidden>Thanks, we got it.</p>
+</form></body></html>

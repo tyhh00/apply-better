@@ -1,0 +1,37 @@
+{
+  "name": "apply-better",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Chrome extension that remembers how you answer applications and fills the next one with you, using Claude Code or Codex on your own computer.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
+    "connect": "node bridge/install.mjs",
+    "disconnect": "node bridge/install.mjs --uninstall",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
+    "e2e": "node test/e2e/run.mjs",
+    "icons": "node scripts/icons.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.7",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "happy-dom": "^21.0.4",
+    "playwright": "^1.65.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
